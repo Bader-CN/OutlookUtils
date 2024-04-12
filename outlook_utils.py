@@ -5,6 +5,7 @@ import pywintypes
 from win32com import client
 from win32com.client.gencache import EnsureDispatch as Dispatch
 
+app = typer.Typer()
 
 class OutlookUtilsBase:
     """
@@ -92,6 +93,37 @@ class OutlookUtilsBase:
         mail_item.Send()
 
 
+@app.command()
+def send_email(
+        to_addr: str = typer.Option(help="收件人邮箱地址, 支持多个: ';' 分割"),
+        cc_addr: str = typer.Option(None, help="抄送的邮箱地址, 支持多个: ';' 分割"),
+        from_addr: str = typer.Option(None, help="发件人邮箱地址"),
+        title: str = typer.Option("Test for OutlookUtils", help="邮箱标题"),
+        content: str = typer.Option("This is test for OutlookUtils", help="邮箱正文"),
+        attachment: str = typer.Option(None, help="附件路径"),
+):
+    """
+    发送邮件
+    """
+    # 初始化类变量
+    outlook_utils = OutlookUtilsBase(to_addr)
+    # 发送邮件
+    outlook_utils.send_email(from_addr, to_addr, cc_addr, title, content, attachment)
+
+
+@app.command()
+def get_emails_title(
+        email_addr: str = typer.Option(help="邮箱地址"),
+        max_emails: int = typer.Option(100, help="最大邮件数量, -1 代表没限制"),
+        filter_by_folder: str = typer.Option("收件箱, inbox", help="检索邮件的文件夹")
+):
+    """
+    获取邮件的标题
+    """
+    outlook_utils = OutlookUtilsBase(email_addr)
+    for mail in outlook_utils.get_emails(email_addr, max_emails, filter_by_folder):
+        print(mail.Subject)
+
+
 if __name__ == "__main__":
-    # typer.run(OutlookUtilsBase)
-    mail = OutlookUtilsBase("email_address@demo.com")
+    app()
