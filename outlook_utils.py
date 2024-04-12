@@ -95,8 +95,8 @@ class OutlookUtilsBase:
 
 @app.command()
 def send_email(
-        to_addr: str = typer.Option(help="收件人邮箱地址, 支持多个: ';' 分割"),
-        cc_addr: str = typer.Option(None, help="抄送的邮箱地址, 支持多个: ';' 分割"),
+        to_addr: str = typer.Option(help="收件人邮箱地址, 支持多个写入多个邮箱, 使用 ';' 分割"),
+        cc_addr: str = typer.Option(None, help="抄送的邮箱地址, 支持多个写入多个邮箱, 使用 ';' 分割"),
         from_addr: str = typer.Option(None, help="发件人邮箱地址"),
         title: str = typer.Option("Test for OutlookUtils", help="邮箱标题"),
         content: str = typer.Option("This is test for OutlookUtils", help="邮箱正文"),
