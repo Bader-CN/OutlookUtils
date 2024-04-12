@@ -16,7 +16,7 @@ class OutlookUtilsBase:
         # 初始化类变量
         self.email_addr = email_addr
 
-    def get_emails(self, email_addr=None, max_emails: int = 100, filter_by_folder: str = "收件箱, inbox"):
+    def get_emails(self, email_addr=None, max_emails: int = 100, filter_by_folder: str = "收件箱, Inbox"):
         """
         获取邮件内容并返回邮件对象的列表, 默认返回获取的前100封邮件对象
         :return: list or False
@@ -48,8 +48,12 @@ class OutlookUtilsBase:
                             pass
 
         # 判断获取的邮件
-        if len(email_items) > max_emails:
+        if max_emails == -1 and len(email_items) > 0:
+            return email_items
+        elif 0 < max_emails < len(email_items):
             return email_items[:max_emails]
+        elif max_emails > 0 and len(email_items) <= max_emails:
+            return email_items
         else:
             return False
 
@@ -115,7 +119,7 @@ def send_email(
 def get_emails_title(
         email_addr: str = typer.Option(help="邮箱地址"),
         max_emails: int = typer.Option(100, help="最大邮件数量, -1 代表没限制"),
-        filter_by_folder: str = typer.Option("收件箱, inbox", help="检索邮件的文件夹")
+        filter_by_folder: str = typer.Option("收件箱, Inbox", help="检索邮件的文件夹")
 ):
     """
     获取邮件的标题
