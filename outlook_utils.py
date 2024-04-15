@@ -4,8 +4,10 @@ import typer
 import pywintypes
 from win32com import client
 from win32com.client.gencache import EnsureDispatch as Dispatch
+from prettytable import PrettyTable
 
 app = typer.Typer()
+table = PrettyTable()
 
 class OutlookUtilsBase:
     """
@@ -57,7 +59,7 @@ class OutlookUtilsBase:
         else:
             return False
 
-    def send_email(self, from_addr=None, to_addr=None, cc_addr=None, title=None, content=None, attachment=None):
+    def send_email(self, from_addr=None, to_addr=None, cc_addr=None, subject=None, content=None, attachment=None):
         """
         发送邮件
         """
@@ -68,7 +70,7 @@ class OutlookUtilsBase:
         cc_addr = self.email_addr if cc_addr is None else cc_addr
         if cc_addr is not None:
             cc_addr = [i.strip() for i in cc_addr.split(';')]
-        title = "Test for OutlookUtils" if title is None else title
+        subject = "Test for OutlookUtils" if subject is None else subject
         content = "This is test for OutlookUtils" if content is None else content
         # 构建邮件对象
         outlook = client.Dispatch("Outlook.Application")
@@ -89,7 +91,7 @@ class OutlookUtilsBase:
         if attachment is not None:
             mail_item.Attachments.Add(attachment)
         # 标题和内容, 2 代表为 HTML 格式的邮件
-        mail_item.Subject = title
+        mail_item.Subject = subject
         mail_item.BodyFormat = 2
         mail_item.HTMLBody = "<div>{}</div>".format(content)
 
@@ -102,31 +104,52 @@ def send_email(
         to_addr: str = typer.Option(help="收件人邮箱地址, 支持多个写入多个邮箱, 使用 ';' 分割"),
         cc_addr: str = typer.Option(None, help="抄送的邮箱地址, 支持多个写入多个邮箱, 使用 ';' 分割"),
         from_addr: str = typer.Option(None, help="发件人邮箱地址"),
-        title: str = typer.Option("Test for OutlookUtils", help="邮箱标题"),
+        subject: str = typer.Option("Test for OutlookUtils", help="邮箱标题"),
         content: str = typer.Option("This is test for OutlookUtils", help="邮箱正文"),
         attachment: str = typer.Option(None, help="附件路径"),
 ):
     """
-    发送邮件
+    发送邮件 / Send Email from local Outlook Client
     """
     # 初始化类变量
     outlook_utils = OutlookUtilsBase(to_addr)
     # 发送邮件
-    outlook_utils.send_email(from_addr, to_addr, cc_addr, title, content, attachment)
-
+    outlook_utils.send_email(from_addr, to_addr, cc_addr, subject, content, attachment)
 
 @app.command()
-def get_emails_title(
+def get_emails_subject(
         email_addr: str = typer.Option(help="邮箱地址"),
         max_emails: int = typer.Option(100, help="最大邮件数量, -1 代表没限制"),
         filter_by_folder: str = typer.Option("收件箱, Inbox", help="检索邮件的文件夹")
 ):
     """
-    获取邮件的标题
+    获取邮件的标题 / Subject of Email
     """
+    table.field_names = ["ID", "Subject"]
+    email_id = 1
     outlook_utils = OutlookUtilsBase(email_addr)
     for mail in outlook_utils.get_emails(email_addr, max_emails, filter_by_folder):
-        print(mail.Subject)
+        table.add_row([email_id, mail.Subject])
+        email_id += 1
+    print(table)
+
+@app.command()
+def get_emails_summary(
+        email_addr: str = typer.Option(help="邮箱地址"),
+        max_emails: int = typer.Option(100, help="最大邮件数量, -1 代表没限制"),
+        filter_by_folder: str = typer.Option("收件箱, Inbox", help="检索邮件的文件夹")
+):
+    """
+    邮件的汇总信息 / Summary of Email Information
+    """
+    table.field_names = ["ID", "Subject", "SenderName", "Recipients", "ReceivedTime"]
+    email_id = 1
+    outlook_utils = OutlookUtilsBase(email_addr)
+    for mail in outlook_utils.get_emails(email_addr, max_emails, filter_by_folder):
+        Recipient_list = str([i.Name for i in mail.Recipients])[1:-1].replace("', '", "; ")
+        table.add_row([email_id, mail.Subject, mail.SenderName, Recipient_list, mail.ReceivedTime])
+        email_id += 1
+    print(table)
 
 
 if __name__ == "__main__":
