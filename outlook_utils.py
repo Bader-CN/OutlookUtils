@@ -151,6 +151,27 @@ def get_emails_summary(
         email_id += 1
     print(table)
 
+@app.command()
+def generate_sf_monthly_report(
+        email_addr: str = typer.Option(help="邮箱地址"),
+        raw_cases_report: str = typer.Option(None, help="附件名前缀, 原始的 Cases 报告, 格式为 <report_name>-%Y-%m-%d-%H-%M-%S.csv"),
+        raw_survey_report: str = typer.Option(None, help="附件名前缀, 原始的 Survey 报告, 格式为 <report_name>-%Y-%m-%d-%H-%M-%S.csv"),
+        max_emails: int = typer.Option(100, help="最大邮件数量, -1 代表没限制"),
+        filter_by_folder: str = typer.Option("收件箱, Inbox", help="检索邮件的文件夹"),
+        month_fffset: int = typer.Option(0, help="月份偏移量, 值请填入负数, 默认为 0, 即统计当月信息"),
+):
+    """
+    生成 SF 每月报告 / Generate SF Monthly Report
+    """
+    # 至少要保证指定了一个原始报告
+    if raw_cases_report is None and raw_survey_report is None:
+        print("至少要指定一个 Report! / At least one report must be specified!")
+        exit(0)
+    # 如果筛选不到指定的附件, 则退出
+    
+
+
+
 
 if __name__ == "__main__":
     app()
