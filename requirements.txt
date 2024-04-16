@@ -1,3 +1,4 @@
 typer
-pywin32
+pandas
 prettytable
+pywin32
