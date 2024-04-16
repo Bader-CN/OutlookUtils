@@ -223,6 +223,7 @@ def generate_sf_monthly_report(
                 close_cases_y = rawcase[rawcase["Closed Date"].dt.year == y_offset]
                 close_cases_m = close_cases_y[close_cases_y["Closed Date"].dt.month == m_offset]
                 backlog = rawcase[rawcase["Status"] != "Closed"]
+                backlog = backlog[backlog["Date/Time Opened"] <= pd.Timestamp(y_offset, m_offset, 1) + pd.offsets.MonthEnd()]
                 kcs_all = close_cases_m[close_cases_m["Knowledge Base Article"].notna() | close_cases_m["Idol Knowledge Link"].notna()]
                 # 分析数据并得出结果
                 table.add_row(["Open Cases", len(open_cases_m)])
@@ -258,8 +259,12 @@ def generate_sf_monthly_report(
                 survey_ces = survey_m[survey_m["OpenText made it easy to handle my case"] >= 8.0]
                 survey_cast = survey_m[survey_m["Satisfied with support experience"] >= 7.0]
                 # 分析数据并得出结果
-                table.add_row(["Survey CES", str(round(len(survey_ces) / len(survey_m) * 100, 2)) + "%"])
-                table.add_row(["Survey CAST", str(round(len(survey_cast) / len(survey_m) * 100, 2)) + "%"])
+                if len(survey_m) > 0:
+                    table.add_row(["Survey CES", str(round(len(survey_ces) / len(survey_m) * 100, 2)) + "%"])
+                    table.add_row(["Survey CAST", str(round(len(survey_cast) / len(survey_m) * 100, 2)) + "%"])
+                else:
+                    table.add_row(["Survey CES", "-"])
+                    table.add_row(["Survey CAST", "-"])
     if len(case_list) == 0 and len(surv_list) == 0:
         print("找不到指定的 Report! / No specified report found!")
         exit(0)
