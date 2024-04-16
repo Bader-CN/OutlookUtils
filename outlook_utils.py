@@ -188,6 +188,21 @@ def generate_sf_monthly_report(
                     surv_list.append(attachment.FileName)
                     surv_list_obj.append(attachment)
 
+    # 计算指定的年月并生成表头
+    if pd.Timestamp.now().month + month_offset >= 1:
+        y_offset = pd.Timestamp.now().year
+        m_offset = pd.Timestamp.now().month + month_offset
+    elif pd.Timestamp.now().month + month_offset == 0:
+        y_offset = pd.Timestamp.now().year - 1
+        m_offset = 12
+    elif pd.Timestamp.now().month + month_offset > -12:
+        y_offset = pd.Timestamp.now().year - 1
+        m_offset = 12 - (abs(pd.Timestamp.now().month + month_offset) % 12)
+    else:
+        y_offset = pd.Timestamp.now().year - (abs(pd.Timestamp.now().month + month_offset) // 12) - 1
+        m_offset = 12 - (abs(pd.Timestamp.now().month + month_offset) % 12)
+    table.field_names = ["KPI", "{}-{}".format(str(y_offset), str(m_offset))]
+
     # 处理 Case Report
     if len(case_list) > 0:
         case_list.sort(reverse=True)
@@ -201,19 +216,6 @@ def generate_sf_monthly_report(
                 # 数据预处理
                 rawcase["Date/Time Opened"] = pd.to_datetime(rawcase["Date/Time Opened"], format="%Y-%m-%d %p%I:%M")
                 rawcase["Closed Date"] = pd.to_datetime(rawcase["Closed Date"], format="%Y-%m-%d")
-                # 计算指定的年月
-                if pd.Timestamp.now().month + month_offset >= 1:
-                    y_offset = pd.Timestamp.now().year
-                    m_offset = pd.Timestamp.now().month + month_offset
-                elif pd.Timestamp.now().month + month_offset == 0:
-                    y_offset = pd.Timestamp.now().year - 1
-                    m_offset = 12
-                elif pd.Timestamp.now().month + month_offset > -12:
-                    y_offset = pd.Timestamp.now().year - 1
-                    m_offset = 12 - (abs(pd.Timestamp.now().month + month_offset) % 12)
-                else:
-                    y_offset = pd.Timestamp.now().year - (abs(pd.Timestamp.now().month + month_offset) // 12) - 1
-                    m_offset = 12 - (abs(pd.Timestamp.now().month + month_offset) % 12)
                 # 根据年份和月份筛选数据
                 open_cases_y = rawcase[rawcase["Date/Time Opened"].dt.year == y_offset]
                 open_cases_m = open_cases_y[open_cases_y["Date/Time Opened"].dt.month == m_offset]
@@ -222,7 +224,6 @@ def generate_sf_monthly_report(
                 backlog = rawcase[rawcase["Status"] != "Closed"]
                 kcs_all = close_cases_m[close_cases_m["Knowledge Base Article"].notna() | close_cases_m["Idol Knowledge Link"].notna()]
                 # 分析数据并得出结果
-                table.field_names = ["KPI", "{}-{}".format(str(y_offset), str(m_offset))]
                 table.add_row(["Open Cases", len(open_cases_m)])
                 table.add_row(["Close Cases", len(close_cases_m)])
                 table.add_row(["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m)* 100, 2)) + "%")])
@@ -236,15 +237,13 @@ def generate_sf_monthly_report(
                 table.add_row(["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
                 table.add_row(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                 table.add_row(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
-        # 打印结果
-        print(table)
-
-
-    elif len(surv_list) > 0:
+    if len(surv_list) > 0:
         pass
-    else:
+    if len(case_list) == 0 and len(surv_list) == 0:
         print("找不到指定的 Report! / No specified report found!")
         exit(0)
+    # 打印结果
+    print(table)
 
 
 if __name__ == "__main__":
