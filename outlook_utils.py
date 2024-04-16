@@ -184,11 +184,11 @@ def generate_sf_monthly_report(
                 if raw_cases_report is not None and re.match(raw_cases_report, attachment.FileName, re.IGNORECASE):
                     case_list.append(attachment.FileName)
                     case_list_obj.append(attachment)
-                if raw_survey_report is not None and re.match(raw_cases_report, attachment.FileName, re.IGNORECASE):
+                if raw_survey_report is not None and re.match(raw_survey_report, attachment.FileName, re.IGNORECASE):
                     surv_list.append(attachment.FileName)
                     surv_list_obj.append(attachment)
 
-    # 计算指定的年月并生成表头
+    # 计算指定的年月
     if pd.Timestamp.now().month + month_offset >= 1:
         y_offset = pd.Timestamp.now().year
         m_offset = pd.Timestamp.now().month + month_offset
@@ -201,6 +201,7 @@ def generate_sf_monthly_report(
     else:
         y_offset = pd.Timestamp.now().year - (abs(pd.Timestamp.now().month + month_offset) // 12) - 1
         m_offset = 12 - (abs(pd.Timestamp.now().month + month_offset) % 12)
+    # 生成表头
     table.field_names = ["KPI", "{}-{}".format(str(y_offset), str(m_offset))]
 
     # 处理 Case Report
@@ -238,7 +239,27 @@ def generate_sf_monthly_report(
                 table.add_row(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                 table.add_row(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
     if len(surv_list) > 0:
-        pass
+        surv_list.sort(reverse=True)
+        raw_surv_report_name = surv_list[0]
+        raw_surv_report_path = os.path.abspath(os.path.join("./", raw_surv_report_name))
+        for attachment in surv_list_obj:
+            if attachment.FileName == raw_surv_report_name:
+                attachment.SaveAsFile(raw_surv_report_path)
+                # 读取文件并计算分析数据
+                rawsurv = pd.read_csv(raw_surv_report_path)
+                # 数据预处理
+                rawsurv["Customer Feed Back Survey: Last Modified Date"] = pd.to_datetime(rawsurv["Customer Feed Back Survey: Last Modified Date"], format="%Y-%m-%d")
+                rawsurv["Customer Feed Back Survey: Created Date"] = pd.to_datetime(rawsurv["Customer Feed Back Survey: Created Date"], format="%Y-%m-%d")
+                rawsurv = rawsurv.sort_values(by=["Customer Feed Back Survey: Last Modified Date", ], ascending=False)
+                rawsurv = rawsurv.drop_duplicates(subset="Case Number")
+                # 根据年份和月份筛选数据
+                survey_y = rawsurv[rawsurv["Customer Feed Back Survey: Last Modified Date"].dt.year == y_offset]
+                survey_m = survey_y[survey_y["Customer Feed Back Survey: Last Modified Date"].dt.month == m_offset]
+                survey_ces = survey_m[survey_m["OpenText made it easy to handle my case"] >= 8.0]
+                survey_cast = survey_m[survey_m["Satisfied with support experience"] >= 7.0]
+                # 分析数据并得出结果
+                table.add_row(["Survey CES", str(round(len(survey_ces) / len(survey_m) * 100, 2)) + "%"])
+                table.add_row(["Survey CAST", str(round(len(survey_cast) / len(survey_m) * 100, 2)) + "%"])
     if len(case_list) == 0 and len(surv_list) == 0:
         print("找不到指定的 Report! / No specified report found!")
         exit(0)
