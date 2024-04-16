@@ -162,6 +162,7 @@ def generate_sf_monthly_report(
         max_emails: int = typer.Option(100, help="最大邮件数量, -1 代表没限制"),
         filter_by_folder: str = typer.Option("收件箱, Inbox", help="检索邮件的文件夹"),
         month_offset: int = typer.Option(0, help="月份偏移量, 值请填入负数, 默认为 0, 即统计当月信息"),
+        output_file: str = typer.Option(None, help="保存到当前路径的文件名, 格式为 csv"),
 ):
     """
     生成 SalesForce 每月报告 / Generate SalesForce Monthly Report
@@ -172,6 +173,7 @@ def generate_sf_monthly_report(
         exit(0)
 
     # 如果筛选不到指定的附件, 则退出
+    csv_data = []
     case_list = []
     surv_list = []
     case_list_obj = []
@@ -227,18 +229,29 @@ def generate_sf_monthly_report(
                 kcs_all = close_cases_m[close_cases_m["Knowledge Base Article"].notna() | close_cases_m["Idol Knowledge Link"].notna()]
                 # 分析数据并得出结果
                 table.add_row(["Open Cases", len(open_cases_m)])
+                csv_data.append(["Open Cases", len(open_cases_m)])
                 table.add_row(["Close Cases", len(close_cases_m)])
+                csv_data.append(["Close Cases", len(close_cases_m)])
                 table.add_row(["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m)* 100, 2)) + "%")])
+                csv_data.append(["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m)* 100, 2)) + "%")])
                 table.add_row(["R&D Assist Rate", str(round(len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
+                csv_data.append(["R&D Assist Rate", str(round(len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                 table.add_row(["Backlog", len(backlog)])
+                csv_data.append(["Backlog", len(backlog)])
                 try:
                     table.add_row(["Backlog > 30", len(backlog[backlog["Age (Days)"] >= 30.0])])
+                    csv_data.append(["Backlog > 30", len(backlog[backlog["Age (Days)"] >= 30.0])])
                 except KeyError:
                     table.add_row(["Backlog > 30", len(backlog[backlog["Age"] >= 30.0])])
+                    csv_data.append(["Backlog > 30", len(backlog[backlog["Age"] >= 30.0])])
                 table.add_row(["Backlog Index", str(round(len(backlog) / len(open_cases_m) * 100, 2)) + "%"])
+                csv_data.append(["Backlog Index", str(round(len(backlog) / len(open_cases_m) * 100, 2)) + "%"])
                 table.add_row(["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
+                csv_data.append(["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
                 table.add_row(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
+                csv_data.append(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                 table.add_row(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
+                csv_data.append(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
     if len(surv_list) > 0:
         surv_list.sort(reverse=True)
         raw_surv_report_name = surv_list[0]
@@ -261,15 +274,23 @@ def generate_sf_monthly_report(
                 # 分析数据并得出结果
                 if len(survey_m) > 0:
                     table.add_row(["Survey CES", str(round(len(survey_ces) / len(survey_m) * 100, 2)) + "%"])
+                    csv_data.append(["Survey CES", str(round(len(survey_ces) / len(survey_m) * 100, 2)) + "%"])
                     table.add_row(["Survey CAST", str(round(len(survey_cast) / len(survey_m) * 100, 2)) + "%"])
+                    csv_data.append(["Survey CAST", str(round(len(survey_cast) / len(survey_m) * 100, 2)) + "%"])
                 else:
                     table.add_row(["Survey CES", "-"])
+                    csv_data.append(["Survey CES", "-"])
                     table.add_row(["Survey CAST", "-"])
+                    csv_data.append(["Survey CES", "-"])
     if len(case_list) == 0 and len(surv_list) == 0:
         print("找不到指定的 Report! / No specified report found!")
         exit(0)
-    # 打印结果
-    print(table)
+    if output_file is None:
+        # 打印结果
+        print(table)
+    else:
+        df = pd.DataFrame(csv_data, columns=csv_data[0])
+        df.to_csv(output_file, index=False, header=["KPI", "{}-{}".format(str(y_offset), str(m_offset))])
 
 
 if __name__ == "__main__":
