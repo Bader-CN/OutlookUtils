@@ -164,7 +164,7 @@ def generate_sf_monthly_report(
         month_offset: int = typer.Option(0, help="月份偏移量, 值请填入负数, 默认为 0, 即统计当月信息"),
 ):
     """
-    生成 SF 每月报告 / Generate SF Monthly Report
+    生成 SalesForce 每月报告 / Generate SalesForce Monthly Report
     """
     # 至少要保证指定了一个原始报告
     if raw_cases_report is None and raw_survey_report is None:
