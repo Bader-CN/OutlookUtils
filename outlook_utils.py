@@ -233,6 +233,9 @@ def generate_sf_monthly_report(
                 # 计算当前状态下状态为非 Closed 的 cases
                 backlog = rawcase[rawcase["Status"] != "Closed"]
                 backlog = backlog[backlog["Date/Time Opened"] <= pd.Timestamp(y_offset, m_offset, 1) + pd.offsets.MonthEnd()]
+                backlog_history = rawcase[rawcase["Closed Date"] > pd.to_datetime("{}-{}".format(y_offset, m_offset, 1), format="%Y-%m") + pd.offsets.MonthEnd()]
+                backlog_history = backlog_history[backlog_history["Date/Time Opened"] <= pd.Timestamp(y_offset, m_offset, 1) + pd.offsets.MonthEnd()]
+                # KCS 相关
                 kcs_all = close_cases_m[close_cases_m["Knowledge Base Article"].notna() | close_cases_m["Idol Knowledge Link"].notna()]
                 # 分析数据并得出结果
                 table.add_row(["Open Cases", len(open_cases_m)])
@@ -254,8 +257,8 @@ def generate_sf_monthly_report(
                     table.add_row(["R&D Assist Rate", "-"])
                     csv_data.append(["R&D Assist Rate", "-"])
                 # Backlog
-                table.add_row(["Backlog", len(backlog)])
-                csv_data.append(["Backlog", len(backlog)])
+                table.add_row(["Backlog", len(backlog) + len(backlog_history)])
+                csv_data.append(["Backlog", len(backlog) + len(backlog_history)])
                 # Backlog > 30
                 if month_offset == 0:
                     try:
