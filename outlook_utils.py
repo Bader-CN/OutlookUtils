@@ -307,6 +307,11 @@ def generate_sf_monthly_report(
                         # KCS Linkage
                         table.add_row(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
                         csv_data.append(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
+                    # 删除文件
+                    try:
+                        os.remove(raw_case_report_path)
+                    except Exception as e:
+                        pass
         except KeyError as e:
             print("The specified column is missing in the report. Please ensure that the specified report is correct and contains the required columns.")
             print("Error message:{}".format(str(e)))
@@ -346,6 +351,11 @@ def generate_sf_monthly_report(
                         csv_data.append(["Survey CES", "-"])
                         table.add_row(["Survey CAST", "-"])
                         csv_data.append(["Survey CES", "-"])
+                    # 删除文件
+                    try:
+                        os.remove(raw_surv_report_path)
+                    except Exception as e:
+                        pass
         except KeyError as e:
             print("The specified column is missing in the Survey Report. Please ensure that the specified report is correct and contains the required columns.")
             print("Error message:{}".format(str(e)))
