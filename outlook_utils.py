@@ -105,15 +105,15 @@ class OutlookUtilsBase:
 
 @app.command()
 def send_email(
-        to_addr: str = typer.Option(help="收件人邮箱地址, 支持多个写入多个邮箱, 使用 ';' 分割"),
-        cc_addr: str = typer.Option(None, help="抄送的邮箱地址, 支持多个写入多个邮箱, 使用 ';' 分割"),
-        from_addr: str = typer.Option(None, help="发件人邮箱地址"),
-        subject: str = typer.Option("Test for OutlookUtils", help="邮箱标题"),
-        content: str = typer.Option("This is test for OutlookUtils", help="邮箱正文"),
-        attachment: str = typer.Option(None, help="附件路径"),
+        to_addr: str = typer.Option(help="Recipient email address, supports multiple emails by writing them separated by ';'"),
+        cc_addr: str = typer.Option(None, help="CC email addresses, multiple email addresses can be written by using ';' as a separator"),
+        from_addr: str = typer.Option(None, help="Sender's email address."),
+        subject: str = typer.Option("Test for OutlookUtils", help="Email Subject"),
+        content: str = typer.Option("This is test for OutlookUtils", help="Email Content"),
+        attachment: str = typer.Option(None, help="Attachment Path"),
 ):
     """
-    发送邮件 / Send Email from local Outlook Client
+    Send Email from local Outlook Client
     """
     # 初始化类变量
     outlook_utils = OutlookUtilsBase(to_addr)
@@ -123,12 +123,12 @@ def send_email(
 
 @app.command()
 def get_emails_subject(
-        email_addr: str = typer.Option(help="邮箱地址"),
-        max_emails: int = typer.Option(100, help="最大邮件数量, -1 代表没限制"),
-        filter_by_folder: str = typer.Option("收件箱, Inbox", help="检索邮件的文件夹")
+        email_addr: str = typer.Option(help="Email Address"),
+        max_emails: int = typer.Option(100, help="Maximum number of emails, -1 means no limit"),
+        filter_by_folder: str = typer.Option("收件箱, Inbox", help="Filter by email folders")
 ):
     """
-    获取邮件的标题 / Subject of Email
+    Get the subject of the email
     """
     table.field_names = ["ID", "Subject"]
     email_id = 1
@@ -141,12 +141,12 @@ def get_emails_subject(
 
 @app.command()
 def get_emails_summary(
-        email_addr: str = typer.Option(help="邮箱地址"),
-        max_emails: int = typer.Option(100, help="最大邮件数量, -1 代表没限制"),
-        filter_by_folder: str = typer.Option("收件箱, Inbox", help="检索邮件的文件夹")
+        email_addr: str = typer.Option(help="Email Address"),
+        max_emails: int = typer.Option(100, help="Maximum number of emails, -1 means no limit"),
+        filter_by_folder: str = typer.Option("收件箱, Inbox", help="Filter by email folders")
 ):
     """
-    邮件的汇总信息 / Summary of Email Information
+    Summary of Email Information
     """
     table.field_names = ["ID", "Subject", "SenderName", "Recipients", "ReceivedTime"]
     email_id = 1
@@ -160,22 +160,20 @@ def get_emails_summary(
 
 @app.command()
 def generate_sf_monthly_report(
-        email_addr: str = typer.Option(help="邮箱地址"),
-        raw_cases_report: str = typer.Option(None,
-                                             help="附件名前缀, 原始的 Cases 报告, 格式为 <report_name>-%Y-%m-%d-%H-%M-%S.csv"),
-        raw_survey_report: str = typer.Option(None,
-                                              help="附件名前缀, 原始的 Survey 报告, 格式为 <report_name>-%Y-%m-%d-%H-%M-%S.csv"),
-        max_emails: int = typer.Option(100, help="最大邮件数量, -1 代表没限制"),
-        filter_by_folder: str = typer.Option("收件箱, Inbox", help="检索邮件的文件夹"),
-        month_offset: int = typer.Option(0, help="月份偏移量, 值请填入负数, 默认为 0, 即统计当月信息"),
-        output_file: str = typer.Option(None, help="保存到当前路径的文件名, 格式为 csv"),
+        email_addr: str = typer.Option(help="Email Address"),
+        raw_cases_report: str = typer.Option(None, help="Attachment Name Prefix: Original Cases Report, Format: <report_name>-%Y-%m-%d-%H-%M-%S.csv"),
+        raw_survey_report: str = typer.Option(None, help="Attachment Name Prefix: Original Survey Report, Format: <report_name>-%Y-%m-%d-%H-%M-%S.csv"),
+        max_emails: int = typer.Option(100, help="Maximum number of emails, -1 means no limit"),
+        filter_by_folder: str = typer.Option("收件箱, Inbox", help="Filter by email folders"),
+        month_offset: int = typer.Option(0, help="Month offset, please enter a negative value. default is 0, which means to calculate the information for the current month"),
+        output_file: str = typer.Option(None, help="Save the file with the current path and name, in csv format"),
 ):
     """
-    生成 SalesForce 每月报告 / Generate SalesForce Monthly Report
+    Generate SalesForce Monthly Report
     """
     # 至少要保证指定了一个原始报告
     if raw_cases_report is None and raw_survey_report is None:
-        print("至少要指定一个 Report! / At least one report must be specified!")
+        print("At least one report must be specified!")
         exit(0)
 
     # 如果筛选不到指定的附件, 则退出
@@ -310,10 +308,8 @@ def generate_sf_monthly_report(
                         table.add_row(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
                         csv_data.append(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
         except KeyError as e:
-            print("Report 中缺少指定的列, 请确保指定的 Rport 是正确的, 并且包含需要的列.")
-            print(
-                "The specified column is missing in the report. Please ensure that the specified report is correct and contains the required columns.")
-            print("错误提示:{}".format(str(e)))
+            print("The specified column is missing in the report. Please ensure that the specified report is correct and contains the required columns.")
+            print("Error message:{}".format(str(e)))
             exit(1)
 
     if len(surv_list) > 0:
@@ -351,14 +347,12 @@ def generate_sf_monthly_report(
                         table.add_row(["Survey CAST", "-"])
                         csv_data.append(["Survey CES", "-"])
         except KeyError as e:
-            print("Survey Report 中缺少指定的列, 请确保指定的 Rport 是正确的, 并且包含需要的列.")
-            print(
-                "The specified column is missing in the Survey Report. Please ensure that the specified report is correct and contains the required columns.")
-            print("错误提示:{}".format(str(e)))
+            print("The specified column is missing in the Survey Report. Please ensure that the specified report is correct and contains the required columns.")
+            print("Error message:{}".format(str(e)))
             exit(1)
 
     if len(case_list) == 0 and len(surv_list) == 0:
-        print("找不到指定的 Report! / No specified report found!")
+        print(" No specified report found!")
         exit(0)
     if output_file is None:
         # 打印结果
