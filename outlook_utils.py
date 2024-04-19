@@ -231,17 +231,11 @@ def generate_sf_monthly_report(
                     close_cases_m = close_cases_y[close_cases_y["Closed Date"].dt.month == m_offset]
                     # 计算当前状态下状态为非 Closed 的 cases
                     backlog = rawcase[rawcase["Status"] != "Closed"]
-                    backlog = backlog[
-                        backlog["Date/Time Opened"] <= pd.Timestamp(y_offset, m_offset, 1) + pd.offsets.MonthEnd()]
-                    backlog_history = rawcase[
-                        rawcase["Closed Date"] > pd.to_datetime("{}-{}".format(y_offset, m_offset, 1),
-                                                                format="%Y-%m") + pd.offsets.MonthEnd()]
-                    backlog_history = backlog_history[
-                        backlog_history["Date/Time Opened"] <= pd.Timestamp(y_offset, m_offset,
-                                                                            1) + pd.offsets.MonthEnd()]
+                    backlog = backlog[backlog["Date/Time Opened"] <= pd.Timestamp(y_offset, m_offset, 1) + pd.offsets.MonthEnd()]
+                    backlog_history = rawcase[rawcase["Closed Date"] > pd.to_datetime("{}-{}".format(y_offset, m_offset, 1), format="%Y-%m") + pd.offsets.MonthEnd()]
+                    backlog_history = backlog_history[backlog_history["Date/Time Opened"] <= pd.Timestamp(y_offset, m_offset, 1) + pd.offsets.MonthEnd()]
                     # KCS 相关
-                    kcs_all = close_cases_m[
-                        close_cases_m["Knowledge Base Article"].notna() | close_cases_m["Idol Knowledge Link"].notna()]
+                    kcs_all = close_cases_m[close_cases_m["Knowledge Base Article"].notna() | close_cases_m["Idol Knowledge Link"].notna()]
                     # 分析数据并得出结果
                     table.add_row(["Open Cases", len(open_cases_m)])
                     csv_data.append(["Open Cases", len(open_cases_m)])
@@ -249,21 +243,17 @@ def generate_sf_monthly_report(
                     csv_data.append(["Close Cases", len(close_cases_m)])
                     # Closure Rate
                     if len(open_cases_m) != 0:
-                        table.add_row(
-                            ["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m) * 100, 2)) + "%")])
-                        csv_data.append(
-                            ["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m) * 100, 2)) + "%")])
+                        table.add_row(["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m) * 100, 2)) + "%")])
+                        csv_data.append(["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m) * 100, 2)) + "%")])
                     else:
                         table.add_row(["Closure Rate", "-"])
                         csv_data.append(["Closure Rate", "-"])
                     # R&D Assist Rate
                     if len(close_cases_m) != 0:
                         table.add_row(["R&D Assist Rate", str(round(
-                            len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100,
-                            2)) + "%"])
+                            len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                         csv_data.append(["R&D Assist Rate", str(round(
-                            len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100,
-                            2)) + "%"])
+                            len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                     else:
                         table.add_row(["R&D Assist Rate", "-"])
                         csv_data.append(["R&D Assist Rate", "-"])
@@ -289,18 +279,12 @@ def generate_sf_monthly_report(
                         table.add_row(["Backlog Index", "-"])
                         csv_data.append(["Backlog Index", "-"])
                     # KCS Articles Created
-                    table.add_row(
-                        ["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
-                    csv_data.append(
-                        ["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
+                    table.add_row(["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
+                    csv_data.append(["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
                     # KCS Created / Closed Cases
                     if len(close_cases_m) != 0:
-                        table.add_row(["KCS Created / Closed Cases", str(round(
-                            len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(
-                                close_cases_m) * 100, 2)) + "%"])
-                        csv_data.append(["KCS Created / Closed Cases", str(round(
-                            len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(
-                                close_cases_m) * 100, 2)) + "%"])
+                        table.add_row(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
+                        csv_data.append(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                     else:
                         table.add_row(["KCS Created / Closed Cases", "-"])
                         csv_data.append(["KCS Created / Closed Cases", "-"])
@@ -328,12 +312,9 @@ def generate_sf_monthly_report(
                     # 读取文件并计算分析数据
                     rawsurv = pd.read_csv(raw_surv_report_path)
                     # 数据预处理
-                    rawsurv["Customer Feed Back Survey: Last Modified Date"] = pd.to_datetime(
-                        rawsurv["Customer Feed Back Survey: Last Modified Date"], format="%Y-%m-%d")
-                    rawsurv["Customer Feed Back Survey: Created Date"] = pd.to_datetime(
-                        rawsurv["Customer Feed Back Survey: Created Date"], format="%Y-%m-%d")
-                    rawsurv = rawsurv.sort_values(by=["Customer Feed Back Survey: Last Modified Date", ],
-                                                  ascending=False)
+                    rawsurv["Customer Feed Back Survey: Last Modified Date"] = pd.to_datetime(rawsurv["Customer Feed Back Survey: Last Modified Date"], format="%Y-%m-%d")
+                    rawsurv["Customer Feed Back Survey: Created Date"] = pd.to_datetime(rawsurv["Customer Feed Back Survey: Created Date"], format="%Y-%m-%d")
+                    rawsurv = rawsurv.sort_values(by=["Customer Feed Back Survey: Last Modified Date", ], ascending=False)
                     rawsurv = rawsurv.drop_duplicates(subset="Case Number")
                     # 根据年份和月份筛选数据
                     survey_y = rawsurv[rawsurv["Customer Feed Back Survey: Last Modified Date"].dt.year == y_offset]
