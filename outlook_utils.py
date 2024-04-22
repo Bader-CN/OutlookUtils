@@ -223,6 +223,7 @@ def generate_sf_monthly_report(
                     rawcase = pd.read_csv(raw_case_report_path)
                     # 数据预处理
                     rawcase["Date/Time Opened"] = pd.to_datetime(rawcase["Date/Time Opened"], format="%Y-%m-%d %p%I:%M")
+                    rawcase["Suggested_Solution_Date"] = pd.to_datetime(rawcase["Suggested_Solution_Date"], format="%Y-%m-%d %p%I:%M")
                     rawcase["Closed Date"] = pd.to_datetime(rawcase["Closed Date"], format="%Y-%m-%d")
                     # 根据年份和月份筛选数据
                     open_cases_y = rawcase[rawcase["Date/Time Opened"].dt.year == y_offset]
@@ -258,17 +259,60 @@ def generate_sf_monthly_report(
                     # Backlog
                     table.add_row(["Backlog", len(backlog) + len(backlog_history)])
                     csv_data.append(["Backlog", len(backlog) + len(backlog_history)])
-                    # Backlog > 30
-                    if month_offset == 0:
+                    # Backlog 相关百分比的计算
+                    # 必须是当月才会计算, 并且 backlog 的值要求大于 0
+                    if month_offset == 0 and (len(backlog) + len(backlog_history)) >= 0:
+                        # Backlog > 30 的比例
                         try:
-                            table.add_row(["Backlog > 30", len(backlog[backlog["Age (Days)"] >= 30.0])])
-                            csv_data.append(["Backlog > 30", len(backlog[backlog["Age (Days)"] >= 30.0])])
+                            backlog30_percentage = str(round(len(backlog[backlog["Age (Days)"] >= 30.0]) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
                         except KeyError:
-                            table.add_row(["Backlog > 30", len(backlog[backlog["Age"] >= 30.0])])
-                            csv_data.append(["Backlog > 30", len(backlog[backlog["Age"] >= 30.0])])
+                            backlog30_percentage = str(round(len(backlog[backlog["Age"] >= 30.0]) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
+                        table.add_row(["Backlog > 30", backlog30_percentage])
+                        csv_data.append(["Backlog > 30", backlog30_percentage])
+                        # Backlog > 30 并且没有升级的比例
+                        try:
+                            backlog30_no_cpe = backlog[backlog["Age (Days)"] >= 30.0]
+                            backlog30_no_cpe = backlog30_no_cpe[backlog30_no_cpe["R&D Incident"].isna()]
+                        except KeyError:
+                            backlog30_no_cpe = backlog[backlog["Age"] >= 30.0]
+                            backlog30_no_cpe = backlog30_no_cpe[backlog30_no_cpe["R&D Incident"].isna()]
+                        backlog_30_no_cpe = str(round(len(backlog30_no_cpe) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
+                        table.add_row(["Backlog > 30 (Support)", backlog_30_no_cpe])
+                        csv_data.append(["Backlog > 30 (Support)", backlog_30_no_cpe])
+                        # Backlog > 90 的比例
+                        try:
+                            backlog90_percentage = str(round(len(backlog[backlog["Age (Days)"] >= 90.0]) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
+                        except KeyError:
+                            backlog90_percentage = str(round(len(backlog[backlog["Age"] >= 90.0]) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
+                        table.add_row(["Backlog > 90", backlog90_percentage])
+                        csv_data.append(["Backlog > 90", backlog90_percentage])
+                        # DTR 计算
+                        ssdata1 = backlog[backlog["Suggested_Solution_Date"].notna()]
+                        ssdata2 = close_cases_m[close_cases_m["Suggested_Solution_Date"].notna()]
+                        ssdata = pd.concat([ssdata1, ssdata2])
+                        ssdata = ssdata.sort_values(by=["Suggested_Solution_Date"], ascending=False)
+                        ssdata = ssdata.drop_duplicates(subset="Case ID")
+
+                        if len(ssdata) != 0:
+                            dtrdata = pd.DataFrame()
+                            dtrdata["Date/Time Opened"] = pd.to_datetime(ssdata["Date/Time Opened"]).dt.date
+                            dtrdata["Suggested_Solution_Date"] = pd.to_datetime(ssdata["Suggested_Solution_Date"]).dt.date
+                            dtr = dtrdata["Suggested_Solution_Date"] - dtrdata["Date/Time Opened"]
+                            dtr_avg = str(round(dtr.sum().days / len(ssdata), 2))
+                            table.add_row(["DTR", dtr_avg])
+                            csv_data.append(["DTR", dtr_avg])
+                        else:
+                            table.add_row(["DTR", "-"])
+                            csv_data.append(["DTR", "-"])
                     else:
                         table.add_row(["Backlog > 30", "-"])
                         csv_data.append(["Backlog > 30", "-"])
+                        table.add_row(["Backlog > 30 (Support)", "-"])
+                        csv_data.append(["Backlog > 30 (Support)", "-"])
+                        table.add_row(["Backlog > 90", "-"])
+                        csv_data.append(["Backlog > 90", "-"])
+                        table.add_row(["DTR", "-"])
+                        csv_data.append(["DTR", "-"])
                     # Backlog Index
                     if len(open_cases_m) != 0:
                         table.add_row(["Backlog Index", str(round(len(backlog) / len(open_cases_m) * 100, 2)) + "%"])
