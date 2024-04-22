@@ -250,10 +250,8 @@ def generate_sf_monthly_report(
                         csv_data.append(["Closure Rate", "-"])
                     # R&D Assist Rate
                     if len(close_cases_m) != 0:
-                        table.add_row(["R&D Assist Rate", str(round(
-                            len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
-                        csv_data.append(["R&D Assist Rate", str(round(
-                            len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
+                        table.add_row(["R&D Assist Rate", str(round(len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
+                        csv_data.append(["R&D Assist Rate", str(round(len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                     else:
                         table.add_row(["R&D Assist Rate", "-"])
                         csv_data.append(["R&D Assist Rate", "-"])
@@ -313,12 +311,12 @@ def generate_sf_monthly_report(
                     rawsurv = pd.read_csv(raw_surv_report_path)
                     # 数据预处理
                     rawsurv["Customer Feed Back Survey: Last Modified Date"] = pd.to_datetime(rawsurv["Customer Feed Back Survey: Last Modified Date"], format="%Y-%m-%d")
-                    rawsurv["Customer Feed Back Survey: Created Date"] = pd.to_datetime(rawsurv["Customer Feed Back Survey: Created Date"], format="%Y-%m-%d")
+                    rawsurv["Closed Data"] = pd.to_datetime(rawsurv["Closed Data"], format="%Y-%m-%d")
                     rawsurv = rawsurv.sort_values(by=["Customer Feed Back Survey: Last Modified Date", ], ascending=False)
                     rawsurv = rawsurv.drop_duplicates(subset="Case Number")
                     # 根据年份和月份筛选数据
-                    survey_y = rawsurv[rawsurv["Customer Feed Back Survey: Last Modified Date"].dt.year == y_offset]
-                    survey_m = survey_y[survey_y["Customer Feed Back Survey: Last Modified Date"].dt.month == m_offset]
+                    survey_y = rawsurv[rawsurv["Closed Data"].dt.year == y_offset]
+                    survey_m = survey_y[survey_y["Closed Data"].dt.month == m_offset]
                     survey_ces = survey_m[survey_m["OpenText made it easy to handle my case"] >= 8.0]
                     survey_cast = survey_m[survey_m["Satisfied with support experience"] >= 7.0]
                     # 分析数据并得出结果
