@@ -49,7 +49,7 @@ class OutlookUtilsBase:
                             index.Sort("[ReceivedTime]", True)
                             for item in index:
                                 email_items.append(item)
-                        except pywintypes.com_error as e:
+                        except pywintypes.com_error:
                             # 预期报错, 有的文件夹无法排序, 因此这部分错误直接忽略即可
                             pass
 
@@ -177,11 +177,11 @@ def generate_sf_monthly_report(
         exit(0)
 
     # 如果筛选不到指定的附件, 则退出
-    csv_data = []
     case_list = []
     surv_list = []
     case_list_obj = []
     surv_list_obj = []
+    summary_datas = []
     outlook_utils = OutlookUtilsBase(email_addr)
     for mail in outlook_utils.get_emails(email_addr, max_emails, filter_by_folder):
         attachments = mail.Attachments
@@ -238,27 +238,20 @@ def generate_sf_monthly_report(
                     # KCS 相关
                     kcs_all = close_cases_m[close_cases_m["Knowledge Base Article"].notna() | close_cases_m["Idol Knowledge Link"].notna()]
                     # 分析数据并得出结果
-                    table.add_row(["Open Cases", len(open_cases_m)])
-                    csv_data.append(["Open Cases", len(open_cases_m)])
-                    table.add_row(["Close Cases", len(close_cases_m)])
-                    csv_data.append(["Close Cases", len(close_cases_m)])
+                    summary_datas.append(["Open Cases", len(open_cases_m)])
+                    summary_datas.append(["Close Cases", len(close_cases_m)])
                     # Closure Rate
                     if len(open_cases_m) != 0:
-                        table.add_row(["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m) * 100, 2)) + "%")])
-                        csv_data.append(["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m) * 100, 2)) + "%")])
+                        summary_datas.append(["Closure Rate", (str(round(len(close_cases_m) / len(open_cases_m) * 100, 2)) + "%")])
                     else:
-                        table.add_row(["Closure Rate", "-"])
-                        csv_data.append(["Closure Rate", "-"])
+                        summary_datas.append(["Closure Rate", "-"])
                     # R&D Assist Rate
                     if len(close_cases_m) != 0:
-                        table.add_row(["R&D Assist Rate", str(round(len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
-                        csv_data.append(["R&D Assist Rate", str(round(len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
+                        summary_datas.append(["R&D Assist Rate", str(round(len(close_cases_m[close_cases_m["R&D Incident"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                     else:
-                        table.add_row(["R&D Assist Rate", "-"])
-                        csv_data.append(["R&D Assist Rate", "-"])
+                        summary_datas.append(["R&D Assist Rate", "-"])
                     # Backlog
-                    table.add_row(["Backlog", len(backlog) + len(backlog_history)])
-                    csv_data.append(["Backlog", len(backlog) + len(backlog_history)])
+                    summary_datas.append(["Backlog", len(backlog) + len(backlog_history)])
                     # Backlog 相关百分比的计算
                     # 必须是当月才会计算, 并且 backlog 的值要求大于 0
                     if month_offset == 0 and (len(backlog) + len(backlog_history)) >= 0:
@@ -267,8 +260,7 @@ def generate_sf_monthly_report(
                             backlog30_percentage = str(round(len(backlog[backlog["Age (Days)"] >= 30.0]) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
                         except KeyError:
                             backlog30_percentage = str(round(len(backlog[backlog["Age"] >= 30.0]) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
-                        table.add_row(["Backlog > 30", backlog30_percentage])
-                        csv_data.append(["Backlog > 30", backlog30_percentage])
+                        summary_datas.append(["Backlog > 30", backlog30_percentage])
                         # Backlog > 30 并且没有升级的比例
                         try:
                             backlog30_no_cpe = backlog[backlog["Age (Days)"] >= 30.0]
@@ -277,15 +269,13 @@ def generate_sf_monthly_report(
                             backlog30_no_cpe = backlog[backlog["Age"] >= 30.0]
                             backlog30_no_cpe = backlog30_no_cpe[backlog30_no_cpe["R&D Incident"].isna()]
                         backlog_30_no_cpe = str(round(len(backlog30_no_cpe) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
-                        table.add_row(["Backlog > 30 (Support)", backlog_30_no_cpe])
-                        csv_data.append(["Backlog > 30 (Support)", backlog_30_no_cpe])
+                        summary_datas.append(["Backlog > 30 (Support)", backlog_30_no_cpe])
                         # Backlog > 90 的比例
                         try:
                             backlog90_percentage = str(round(len(backlog[backlog["Age (Days)"] >= 90.0]) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
                         except KeyError:
                             backlog90_percentage = str(round(len(backlog[backlog["Age"] >= 90.0]) / (len(backlog) + len(backlog_history)) * 100, 2)) + "%"
-                        table.add_row(["Backlog > 90", backlog90_percentage])
-                        csv_data.append(["Backlog > 90", backlog90_percentage])
+                        summary_datas.append(["Backlog > 90", backlog90_percentage])
                         # DTR 计算
                         ssdata1 = backlog[backlog["Suggested_Solution_Date"].notna()]
                         ssdata2 = close_cases_m[close_cases_m["Suggested_Solution_Date"].notna()]
@@ -299,48 +289,36 @@ def generate_sf_monthly_report(
                             dtrdata["Suggested_Solution_Date"] = pd.to_datetime(ssdata["Suggested_Solution_Date"]).dt.date
                             dtr = dtrdata["Suggested_Solution_Date"] - dtrdata["Date/Time Opened"]
                             dtr_avg = str(round(dtr.sum().days / len(ssdata), 2))
-                            table.add_row(["DTR", dtr_avg])
-                            csv_data.append(["DTR", dtr_avg])
+                            summary_datas.append(["DTR", dtr_avg])
                         else:
-                            table.add_row(["DTR", "-"])
-                            csv_data.append(["DTR", "-"])
+                            summary_datas.append(["DTR", "-"])
                     else:
-                        table.add_row(["Backlog > 30", "-"])
-                        csv_data.append(["Backlog > 30", "-"])
-                        table.add_row(["Backlog > 30 (Support)", "-"])
-                        csv_data.append(["Backlog > 30 (Support)", "-"])
-                        table.add_row(["Backlog > 90", "-"])
-                        csv_data.append(["Backlog > 90", "-"])
-                        table.add_row(["DTR", "-"])
-                        csv_data.append(["DTR", "-"])
+                        summary_datas.append(["Backlog > 30", "-"])
+                        summary_datas.append(["Backlog > 30 (Support)", "-"])
+                        summary_datas.append(["Backlog > 90", "-"])
+                        summary_datas.append(["DTR", "-"])
                     # Backlog Index
                     if len(open_cases_m) != 0:
-                        table.add_row(["Backlog Index", str(round(len(backlog) / len(open_cases_m) * 100, 2)) + "%"])
-                        csv_data.append(["Backlog Index", str(round(len(backlog) / len(open_cases_m) * 100, 2)) + "%"])
+                        summary_datas.append(["Backlog Index", str(round(len(backlog) / len(open_cases_m) * 100, 2)) + "%"])
                     else:
-                        table.add_row(["Backlog Index", "-"])
-                        csv_data.append(["Backlog Index", "-"])
+                        summary_datas.append(["Backlog Index", "-"])
                     # KCS Articles Created
-                    table.add_row(["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
-                    csv_data.append(["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
+                    summary_datas.append(["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
                     # KCS Created / Closed Cases
                     if len(close_cases_m) != 0:
-                        table.add_row(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
-                        csv_data.append(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
+                        summary_datas.append(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
                     else:
-                        table.add_row(["KCS Created / Closed Cases", "-"])
-                        csv_data.append(["KCS Created / Closed Cases", "-"])
+                        summary_datas.append(["KCS Created / Closed Cases", "-"])
                         # KCS Linkage
-                        table.add_row(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
-                        csv_data.append(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
+                        summary_datas.append(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
                     # 删除文件
                     try:
                         os.remove(raw_case_report_path)
                     except Exception as e:
-                        pass
+                        print("Error message: {}".format(str(e)))
         except KeyError as e:
             print("The specified column is missing in the report. Please ensure that the specified report is correct and contains the required columns.")
-            print("Error message:{}".format(str(e)))
+            print("Error message: {}".format(str(e)))
             exit(1)
 
     if len(surv_list) > 0:
@@ -365,20 +343,16 @@ def generate_sf_monthly_report(
                     survey_cast = survey_m[survey_m["Satisfied with support experience"] >= 7.0]
                     # 分析数据并得出结果
                     if len(survey_m) > 0:
-                        table.add_row(["Survey CES", str(round(len(survey_ces) / len(survey_m) * 100, 2)) + "%"])
-                        csv_data.append(["Survey CES", str(round(len(survey_ces) / len(survey_m) * 100, 2)) + "%"])
-                        table.add_row(["Survey CAST", str(round(len(survey_cast) / len(survey_m) * 100, 2)) + "%"])
-                        csv_data.append(["Survey CAST", str(round(len(survey_cast) / len(survey_m) * 100, 2)) + "%"])
+                        summary_datas.append(["Survey CES", str(round(len(survey_ces) / len(survey_m) * 100, 2)) + "%"])
+                        summary_datas.append(["Survey CAST", str(round(len(survey_cast) / len(survey_m) * 100, 2)) + "%"])
                     else:
-                        table.add_row(["Survey CES", "-"])
-                        csv_data.append(["Survey CES", "-"])
-                        table.add_row(["Survey CAST", "-"])
-                        csv_data.append(["Survey CES", "-"])
+                        summary_datas.append(["Survey CES", "-"])
+                        summary_datas.append(["Survey CAST", "-"])
                     # 删除文件
                     try:
                         os.remove(raw_surv_report_path)
                     except Exception as e:
-                        pass
+                        print("Error message: {}".format(str(e)))
         except KeyError as e:
             print("The specified column is missing in the Survey Report. Please ensure that the specified report is correct and contains the required columns.")
             print("Error message:{}".format(str(e)))
@@ -389,11 +363,13 @@ def generate_sf_monthly_report(
         exit(0)
     if output_file is None:
         # 打印结果
+        # add_rows() 可以添加多个数据, add_row() 可以添加一个数据
+        table.add_rows(summary_datas)
         print(table)
     else:
         if not re.findall(r"\.csv$", output_file):
             output_file = output_file + ".csv"
-        df = pd.DataFrame(csv_data, columns=csv_data[0])
+        df = pd.DataFrame(summary_datas, columns=summary_datas[0])
         df.to_csv(output_file, index=False, header=["KPI", "{}-{}".format(str(y_offset), str(m_offset))])
 
 
