@@ -336,7 +336,7 @@ def generate_sf_monthly_report(
                     survey_y = rawsurv[rawsurv["Closed Data"].dt.year == y_offset]
                     survey_m = survey_y[survey_y["Closed Data"].dt.month == m_offset]
                     survey_ces = survey_m[survey_m["OpenText made it easy to handle my case"] >= 8.0]
-                    survey_cast = survey_m[survey_m["Satisfied with support experience"] >= 7.0]
+                    survey_cast = survey_m[survey_m["Satisfied with support experience"] >= 8.0]
                     # 分析数据并得出结果
                     if len(survey_m) > 0:
                         summary_datas.append(["Survey CES", str(round(len(survey_ces) / len(survey_m) * 100, 2)) + "%"])
