@@ -302,15 +302,11 @@ def generate_sf_monthly_report(
                         summary_datas.append(["Backlog Index", str(round(len(backlog) / len(open_cases_m) * 100, 2)) + "%"])
                     else:
                         summary_datas.append(["Backlog Index", "-"])
-                    # KCS Articles Created
-                    summary_datas.append(["KCS Articles Created", len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()])])
-                    # KCS Created / Closed Cases
+                    # KCS Linkage
                     if len(close_cases_m) != 0:
-                        summary_datas.append(["KCS Created / Closed Cases", str(round(len(close_cases_m[close_cases_m["Knowledge Base Article"].notna()]) / len(close_cases_m) * 100, 2)) + "%"])
-                    else:
-                        summary_datas.append(["KCS Created / Closed Cases", "-"])
-                        # KCS Linkage
                         summary_datas.append(["KCS Linkage", str(round(len(kcs_all) / len(close_cases_m) * 100, 2)) + "%"])
+                    else:
+                        summary_datas.append(["KCS Linkage", "-"])
                     # 删除文件
                     try:
                         os.remove(raw_case_report_path)
